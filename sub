@@ -1,0 +1,151 @@
+#include <Servo.h>
+#define enA 10 // Enable1 L298 Pin enA
+#define in1 9  // Motor1 L298 Pin in1
+#define in2 8  // Motor1 L298 Pin in2
+#define in3 7  // Motor2 L298 Pin in3
+#define in4 6  // Motor2 L298 Pin in4
+#define enB 5  // Enable2 L298 Pin enB
+
+#define R_S A0 // IR sensor Right
+#define L_S A1 // IR sensor Left
+#define echo A2    //Echo pin
+#define trigger A3 //Trigger pin
+
+#define servo A5
+
+Servo myServo;
+
+long duration; // Variable to store time taken to the pulse
+               // to reach receiver
+ 
+int distance; // Variable to store distance calculated using
+              // formula
+
+void setup() {
+  pinMode(enA, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(enB, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  pinMode(R_S, INPUT);
+  pinMode(L_S, INPUT);
+  myServo.attach(servo);
+  myServo.write(85);
+
+  pinMode(trigger,
+            OUTPUT); // Sets the trigPin as an OUTPUT
+    pinMode(echo, INPUT); // Sets the echoPin as an INPUT
+ 
+    // Serial Communication is starting with 9600 of
+    // baudrate speed
+    Serial.begin(9600);
+ 
+    // The text to be printed in serial monitor
+    Serial.println(
+        "Distance measurement using Arduino Uno.");
+    delay(500);
+}
+
+void moveForward() {
+ digitalWrite(in1, LOW);   // Set in1 to LOW
+  digitalWrite(in2, HIGH);  // Set in2 to HIGH
+  analogWrite(enA, 95); 
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+  analogWrite(enB, 95);
+}
+
+
+void turnLeft() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, HIGH);
+  analogWrite(enA, 95);
+
+  digitalWrite(in3, HIGH);
+  digitalWrite(in4, LOW);
+  analogWrite(enB, 95);
+}
+
+void turnRight() {
+  digitalWrite(in1, HIGH);
+  digitalWrite(in2, LOW);
+  analogWrite(enA, 95);
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, HIGH);
+  analogWrite(enB, 95);
+}
+
+void stopMotors() {
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  analogWrite(enA, 0);
+
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+  analogWrite(enB, 0);
+}
+
+void loop() {
+  int rightSensor = digitalRead(R_S);
+  int leftSensor = digitalRead(L_S);
+
+  digitalWrite(trigger, LOW);
+    delayMicroseconds(2); // wait for 2 ms to avoid
+                          // collision in serial monitor
+ 
+    digitalWrite(
+        trigger,
+        HIGH); // turn on the Trigger to generate pulse
+    delayMicroseconds(
+        10); // keep the trigger "ON" for 10 ms to generate
+             // pulse for 10 ms.
+ 
+    digitalWrite(trigger,
+                 LOW); // Turn off the pulse trigger to stop
+                       // pulse generation
+ 
+    // If pulse reached the receiver echoPin
+    // become high Then pulseIn() returns the
+    // time taken by the pulse to reach the
+    // receiver
+ 
+    duration = pulseIn(echo, HIGH);
+    distance
+        = duration * 0.0344 / 2; // Expression to calculate
+                                 // distance using time
+ 
+    Serial.print("Distance: ");
+    Serial.print(
+        distance); // Print the output in serial monitor
+    Serial.println(" cm");
+    delay(100);
+
+  if(distance <=25)
+  {
+    stopMotors();
+  }
+  // If both sensors are on a black line, stop
+  else if (rightSensor == HIGH && leftSensor == HIGH) {
+    stopMotors();
+  }
+  // If both sensors are on a white surface, move forward
+  else if (rightSensor == LOW && leftSensor == LOW) {
+    moveForward();
+  }
+  // If only the left sensor is on a black line, turn right
+  else if (rightSensor == HIGH && leftSensor == LOW) {
+    turnRight();
+  }
+  // If only the right sensor is on a black line, turn left
+  else if (rightSensor == LOW && leftSensor == HIGH) {
+    turnLeft();
+  }
+  // Handle other cases (adjust as needed)
+  else {
+    // You may want to add specific behavior for different sensor conditions here
+  }
+}
